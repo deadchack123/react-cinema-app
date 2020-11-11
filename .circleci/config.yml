@@ -43,7 +43,7 @@ jobs:
       - checkout
       - heroku/install
       - heroku/deploy-via-git:
-          app-name: $HEROKU_APP_NAME_MASTER
+          app-name: << parameters.app-name >>
 orbs:
   heroku: circleci/heroku@1.2.3
 
