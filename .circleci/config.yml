@@ -32,7 +32,7 @@ jobs:
       - checkout
       - heroku/install
       - heroku/deploy-via-git
-      -
+
   deploy-to-heroku-master:
     executor: heroku/default
     parameters:
