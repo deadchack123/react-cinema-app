@@ -1,17 +1,56 @@
 version: 2.1
-orbs:
-  node: circleci/node@1.1.6
+
 jobs:
-  build-and-test:
-    executor:
-      name: node/default
+  build:
+    docker:
+      - image: circleci/node:13.12.0
+    working_directory: ~/repo
     steps:
       - checkout
-      - node/with-cache:
-          steps:
-            - run: npm install
-            - run: npm test
+      - run:
+          name: Show current branch
+          command: echo ${CURRENT_BRANCH}
+      - restore_cache:
+          key:
+            - app-{{ checksum "package.json" }}
+            - app-
+      - run:
+          name: Install dependencies
+          command: npm install
+      - save_cache:
+          paths:
+            - node_modules
+          key: app-{{ checksum "package.json" }}
+
+  deploy-to-heroku:
+    docker:
+      - image: circleci/node:13.12.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Show current branch
+          command: echo ${CURRENT_BRANCH}
+      - run:
+          name: Push in Heroku git
+          working_directory: /
+          command: |
+            if [ "${CURRENT_BRANCH}" == "master" ]
+            then
+              git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME_MASTER.git master --delete
+            elif [ "${CURRENT_BRANCH}" == "develop" ]
+              git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git master --delete
+            fi
+
 workflows:
-  build-and-test:
+  build_and_deploy:
     jobs:
-      - build-and-test
+      - build
+      - deploy-to-heroku:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - develope
+                - master
