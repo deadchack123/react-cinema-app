@@ -27,6 +27,12 @@ jobs:
     steps:
       - checkout
       - heroku/install
+      - run:
+            command: |
+              if [ "${CIRCLE_BRANCH}" == "develop" ]
+              then
+                << parameters.app-name >>: ${$HEROKU_APP_NAME_MASTER}
+              fi
       - heroku/deploy-via-git
 orbs:
   heroku: circleci/heroku@1.2.3
