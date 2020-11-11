@@ -43,6 +43,7 @@ jobs:
       - checkout
       - heroku/install
       - heroku/deploy-via-git
+          app-name: $HEROKU_APP_NAME_MASTER
 orbs:
   heroku: circleci/heroku@1.2.3
 
@@ -58,6 +59,7 @@ workflows:
               only:
                 - develop
       - deploy-to-heroku-master:
+          app-name: $HEROKU_APP_NAME_MASTER
           requires:
             - build
           filters:
