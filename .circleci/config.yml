@@ -24,6 +24,9 @@ jobs:
 
   deploy-to-heroku:
     executor: heroku/default
+    parameters:
+      app-name:
+        default: $HEROKU_APP_NAME
     steps:
       - checkout
       - heroku/install
