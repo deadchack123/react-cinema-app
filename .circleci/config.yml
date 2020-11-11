@@ -42,7 +42,7 @@ jobs:
     steps:
       - checkout
       - heroku/install
-      - heroku/deploy-via-git
+      - heroku/deploy-via-git:
           app-name: $HEROKU_APP_NAME_MASTER
 orbs:
   heroku: circleci/heroku@1.2.3
