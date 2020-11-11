@@ -22,7 +22,7 @@ jobs:
             - node_modules
           key: app-{{ checksum "package.json" }}
 
-  deploy-to-heroku:
+  deploy-to-heroku-develop:
     executor: heroku/default
     parameters:
       app-name:
@@ -31,12 +31,17 @@ jobs:
     steps:
       - checkout
       - heroku/install
-      - run:
-            command: |
-              if [ "${CIRCLE_BRANCH}" == "develop" ]
-              then
-                app-name: ${$HEROKU_APP_NAME_MASTER}
-              fi
+      - heroku/deploy-via-git
+      -
+  deploy-to-heroku-master:
+    executor: heroku/default
+    parameters:
+      app-name:
+        default: $HEROKU_APP_NAME_MASTER
+        type: string
+    steps:
+      - checkout
+      - heroku/install
       - heroku/deploy-via-git
 orbs:
   heroku: circleci/heroku@1.2.3
@@ -45,11 +50,17 @@ workflows:
   build_and_deploy:
     jobs:
       - build
-      - deploy-to-heroku:
+      - deploy-to-heroku-develop:
           requires:
             - build
           filters:
             branches:
               only:
                 - develop
-                - master
+      - deploy-to-heroku-master:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - develop
