@@ -1,5 +1,15 @@
 version: 2.1
 
+orbs:
+  heroku: circleci/heroku@1.2.3
+  slack: circleci/slack@4.1.1
+
+executors:
+  slack-executer:
+    docker:
+      - image: 'cibuilds/base:latest'
+    resource_clas: small
+
 aliases:
   - &show-current-branch-name
     run:
@@ -79,8 +89,15 @@ jobs:
       - heroku/install
       - heroku/deploy-via-git:
           app-name: << parameters.app-name >>
-orbs:
-  heroku: circleci/heroku@1.2.3
+
+  notify-via-slack:
+    executor: slack-executer
+    steps:
+      - slack/notify:
+          message: "${CIRCLE_BRANCH} branch deployment to heroku is complete."
+          webhook: $SLACK_WEBHOOK
+      -slack/status:
+        webhook: $SLACK_WEBHOOK
 
 workflows:
   build_and_deploy:
@@ -116,4 +133,13 @@ workflows:
           filters:
             branches:
               only:
+                - master
+      - notify-via-slack:
+          requires:
+            - deploy-to-heroku-develop
+            - deploy-to-heroku-master
+          filters:
+            branches:
+              only:
+                - develop
                 - master
