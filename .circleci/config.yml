@@ -96,7 +96,7 @@ workflows:
                 - master
       - prettier:
           requires:
-            - build
+            - linting
           filters:
             branches:
               only:
