@@ -28,7 +28,8 @@
     "react"
   ],
   "rules": {
-    "semi": [2, "always"],
+    "semi": [2, "never"],
+    "default-param-last" : "off",
     "space-before-function-paren": [0, {"anonymous": "always", "named": "always"}],
     "camelcase": 0,
     "no-return-assign": 0
