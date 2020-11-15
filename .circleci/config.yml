@@ -96,8 +96,8 @@ jobs:
       - slack/notify:
           message: "${CIRCLE_BRANCH} branch deployment to heroku is complete."
           webhook: $SLACK_WEBHOOK
-      -slack/status:
-        webhook: $SLACK_WEBHOOK
+      - slack/status:
+          webhook: $SLACK_WEBHOOK
 
 workflows:
   build_and_deploy:
