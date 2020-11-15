@@ -44,6 +44,19 @@ jobs:
           name: Run linting
           command: npm run lint
 
+
+  prettier:
+    docker:
+      - image: circleci/node:13.12.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *show-current-branch-name
+      - *restor-cache
+      - run:
+          name: Run prettier check
+          command: npm run prettier:check
+
   deploy-to-heroku-develop:
     executor: heroku/default
     parameters:
@@ -76,10 +89,22 @@ workflows:
       - linting:
           requires:
               - build
-      - deploy-to-heroku-develop:
+          filters:
+            branches:
+              only:
+                - develop
+                - master
+      - prettier:
           requires:
             - build
-            - linting
+          filters:
+            branches:
+              only:
+                - develop
+                - master
+      - deploy-to-heroku-develop:
+          requires:
+            - prettier
           filters:
             branches:
               only:
@@ -87,8 +112,7 @@ workflows:
       - deploy-to-heroku-master:
           app-name: $HEROKU_APP_NAME_MASTER
           requires:
-            - build
-            - linting
+            - prettier
           filters:
             branches:
               only:
