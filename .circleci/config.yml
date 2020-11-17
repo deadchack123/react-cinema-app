@@ -1,0 +1,145 @@
+version: 2.1
+
+orbs:
+  heroku: circleci/heroku@1.2.3
+  slack: circleci/slack@3.4.2
+
+executors:
+  slack-executer:
+    docker:
+      - image: 'cibuilds/base:latest'
+    resource_class: small
+
+aliases:
+  - &show-current-branch-name
+    run:
+      name: Show current branch
+      command: echo ${CIRCLE_BRANCH}
+  - &restor-cache
+    restore_cache:
+      keys:
+        - app-{{ checksum "package.json" }}
+        - app-
+  - &install-dependencies
+    run:
+      name: Install dependencies
+      command: npm install
+  - &save_cache
+    save_cache:
+      paths:
+        - node_modules
+      key: app-{{ checksum "package.json" }}
+
+jobs:
+  build:
+    docker:
+      - image: circleci/node:13.12.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *show-current-branch-name
+      - *restor-cache
+      - *install-dependencies
+      - *save_cache
+
+  linting:
+    docker:
+      - image: circleci/node:13.12.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *show-current-branch-name
+      - *restor-cache
+      - run:
+          name: Run linting
+          command: npm run lint
+
+
+  prettier:
+    docker:
+      - image: circleci/node:13.12.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *show-current-branch-name
+      - *restor-cache
+      - run:
+          name: Run prettier check
+          command: npm run prettier:check
+
+  deploy-to-heroku-develop:
+    executor: heroku/default
+    parameters:
+      app-name:
+        default: $HEROKU_APP_NAME
+        type: string
+    steps:
+      - checkout
+      - heroku/install
+      - heroku/deploy-via-git
+
+  deploy-to-heroku-master:
+    executor: heroku/default
+    parameters:
+      app-name:
+        default: $HEROKU_APP_NAME_MASTER
+        type: string
+    steps:
+      - checkout
+      - heroku/install
+      - heroku/deploy-via-git:
+          app-name: << parameters.app-name >>
+
+  notify-via-slack:
+    executor: slack-executer
+    steps:
+      - slack/notify:
+          message: "${CIRCLE_BRANCH} branch deployment to heroku is complete."
+          webhook: $SLACK_WEBHOOK
+      - slack/status:
+          webhook: $SLACK_WEBHOOK
+
+workflows:
+  build_and_deploy:
+    jobs:
+      - build
+      - linting:
+          requires:
+              - build
+          filters:
+            branches:
+              only:
+                - develop
+                - master
+      - prettier:
+          requires:
+            - linting
+          filters:
+            branches:
+              only:
+                - develop
+                - master
+      - deploy-to-heroku-develop:
+          requires:
+            - prettier
+          filters:
+            branches:
+              only:
+                - develop
+      - deploy-to-heroku-master:
+          app-name: $HEROKU_APP_NAME_MASTER
+          requires:
+            - prettier
+          filters:
+            branches:
+              only:
+                - master
+      - notify-via-slack:
+          requires:
+            - deploy-to-heroku-develop
+            - deploy-to-heroku-master
+          filters:
+            branches:
+              only:
+                - develop
+                - master
